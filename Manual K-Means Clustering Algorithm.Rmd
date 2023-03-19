@@ -1,0 +1,130 @@
+---
+title: "Pset1, Problem4"
+author: "Aditya Khera"
+date: "2/10/2023"
+output: pdf_document
+---
+# Question 4
+
+## Data set up
+```{r DATA SET UP}
+### all images corresponding to digit "3"
+zip.3 <- read.table("train_3.txt", header=FALSE, sep=",")
+zip.3 <- as.matrix(zip.3)
+
+### all images corresponding to digit "5"
+zip.5 <- read.table("train_5.txt", header=FALSE, sep=",")
+zip.5 <- as.matrix(zip.5)
+
+### all images corresponding to digit "8"
+zip.8 <- read.table("train_8.txt", header=FALSE, sep=",")
+zip.8 <- as.matrix(zip.8)
+
+n.3 <- length(zip.3[,1])
+n.5 <- length(zip.5[,1])
+n.8 <- length(zip.8[,1])
+
+data4 <- rbind(zip.3, zip.5, zip.8)
+```
+
+## Building the Function!
+```{r}
+data4 <- rbind(zip.3, zip.5, zip.8)
+
+kmeansclustering <- function(data, k=3){
+  ###initial random setting
+  clusters <- sample(1:k, nrow(data), replace = TRUE)
+  centroid <- list()
+  ###repeat ten times,,, assume convergence by then
+  for(z in 1:10){
+    
+    for(j in 1:k){
+      centroid[[j]] <- unname(colMeans(data[which(clusters == j), ]))
+    }
+    
+    
+    
+    distances <- list()
+    
+    for(j in 1:k){
+      euclid <- 0
+      for(i in 1:256){
+        euclid <- euclid + (data[, i] - centroid[[j]][i])^2
+      }
+      euclid <- sqrt(euclid)
+      distances[[j]] <- euclid
+    }
+    
+    minimizer <- unlist(distances)
+    mins <- matrix(minimizer, ncol = k)
+    
+    
+    clusters <- apply(mins, 1, which.min)
+  }
+
+  ###calculate the variance from the final cluster assignments
+  vars <- list()
+  within.vars <- rep(0, k)
+  sums <- 0
+  for(j in 1:k){
+    sums <- 0
+    subset <- data[clusters == j,]
+    
+    for (i in 1:256){
+      sums <- sums + (subset[, i] - centroid[[j]][i])^2
+    }
+    
+    vars[[j]] <- sums
+    a <- sum(unlist(vars[[j]]))
+    within.vars[j] <- a
+  }
+  
+  
+  
+  output <- list()
+  output[[1]] <- clusters
+  output[[2]] <- centroid
+  output[[3]] <- within.vars
+  
+  return(output)
+  }
+
+output.image<-function(vector) {
+	digit<-matrix(vector, nrow=16, ncol=16)
+	#index= seq(from=1, to =16, by=1)
+	index= seq(from=16, to =1, by=-1)
+	sym_digit = digit[,index]
+	image(sym_digit, col= gray((8:0)/8), axes=FALSE)
+}
+
+```
+
+## Testing on K = 2,3,4
+```{r problem testing}
+
+k <- c(2, 3, 4)
+for (j in k){
+  output <- kmeansclustering(data4, j)
+  print(paste("These are the clusters for", j, "clusters and their within.vars"))
+  for (i in 1:length(output[[2]])){
+    x <- unlist(output[[2]][i])
+    output.image(x)
+    print(output[[3]][i])
+  }
+}
+```
+
+## K=3 Table Comparison
+```{r}
+kmeans3 <- kmeansclustering(data4, 3)
+truth <- c(n.3, n.5, n.8)
+table(kmeans3[[1]])
+print(truth)
+
+```
+When looking at the two cluster sizes, we see some degree of similarity between the two. Our kmeans clustering algorithm is somewhat close to the original data, with obvious errors. 
+
+## K=2,4 Patterns
+While running the kmeans clustering algorithm for k=2 and k=4 some trends emerged. Firstly, the images in k=2 were much blurrier, indicating a "fused" centroid. Generally, the centroids produced were 3-8 blend and a blurry 5. Visually, 3 and 8 look similar so it makes sense that those two digits were more likely to be fused together into one centroid. 
+
+One the other hand, when using k=4 we see a new cluster emerge which again looks like a 3-8 blend. With k=4 we have a clear 3, 5, and 8 with an added blend cluster close to what we saw in k=2. It appears that 5 is usually selected as a seperate cluster from the rest of the data, and increasing or decreasing the cluster count froom 3 yeilds a blended 3-8 cluster.

@@ -1,0 +1,60 @@
+---
+title: "Pset1, Problem5"
+author: "Aditya Khera"
+date: "2/10/2023"
+output: pdf_document
+---
+
+# Question 5
+
+## Data Set up
+```{r}
+### all images corresponding to digit "3"
+zip.3 <- read.table("train_3.txt", header=FALSE, sep=",")
+zip.5 <- read.table("train_5.txt", header=FALSE, sep=",")
+zip.8 <- read.table("train_8.txt", header=FALSE, sep=",")
+
+###reading the test data into a matrix
+zip.test <- read.table("zip_test.txt", header=FALSE)
+
+n.3 <- length(zip.3[,1])
+n.5 <- length(zip.5[,1])
+n.8 <- length(zip.8[,1])
+
+y_train <- rbind(zip.3, zip.5, zip.8)
+y_train_label <- c(rep(3, n.3), rep(5, n.5), rep(8, n.8))
+y_train <-cbind(y_train_label, y_train)
+y_test <- zip.test[zip.test$V1 == 3 | zip.test$V1 == 5 | zip.test$V1 == 8 ,]
+```
+
+## Applying Filter
+```{r}
+library(class)
+truth <- y_test$V1
+
+#calculating models and test errors
+testerrors <- c()
+trainingerrors <- c()
+for (i in 1:40){
+  ki <- knn(train=y_train, test=y_test, cl=y_train$y_train_label, k=i)
+  testerrors[i] <- 100 * sum(truth != ki)/NROW(truth)
+  ktraining <- knn(train = y_train, test = y_train, cl = y_train$y_train_label, k=i)
+  trainingerrors[i] <- 100 * sum(y_train$y_train_label != ktraining)/NROW(y_train$y_train_label)
+}
+```
+
+## Plot Building
+```{r}
+plot_range <- range(testerrors, trainingerrors)
+plot_range <- c(plot_range[1]-.5,plot_range[2]+.5)
+plot(x=c(1:40),y=testerrors,type="o",col="blue", ylim=plot_range,xlim=c(0,42), main="Test Accuracy for KNN Classification",xlab="K-Value",ylab="Percent")
+lines(x=c(1:40),y=trainingerrors,col="red")
+
+points(x=c(1:40),y=trainingerrors,col="red")
+legend("topright",legend=c("Training Error","Test Error"),fill=c(2,4),cex=.75)
+
+
+###optimal selection
+print(paste("Max test accuracy is achieved with", which.min(testerrors), "neighbors examined. Based on the optimal test error (", min(testerrors) , ")."))
+```
+

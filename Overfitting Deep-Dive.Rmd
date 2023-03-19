@@ -1,0 +1,120 @@
+---
+title: "Pset1 Problem1"
+author: "Aditya Khera"
+date: "2/11/2023"
+output: pdf_document
+---
+
+# Question 1
+
+## Question 1.1
+In general, higher-degree regression functions correspond to lower MSE Training values. As we’ve seen in lecture slides, increasing the number of parameters in the regression model makes it more sensitive to individual points. We can expect MSE Training values to be highest for linear and lowest for cubic regressions. 
+
+## Question 1.2
+On the other hand, the test MSE values would look different. Since the underlying data is actually linear, we should expect the linear regression model to fit the test data best and have the lowest test MSE value. The other two models add additional and unnecessary parameters to the regression which fit the training data set well but overfit the test data. As a result, linear would have the lowest test MSE while quadratic would be higher and a cubic regression model would be have the highest test MSE value.
+
+## Question 1.3.a
+```{r}
+###single realized data set
+
+set.seed(1)
+f <- 3
+n <- 1000
+x <- runif(n)
+Y <- 2 - 6*x + rnorm(n,sd=.5)
+
+train_index <- sample(1:n,floor(.8*n))
+train_data <- data.frame(x=x[train_index],Y=Y[train_index])
+test_data <- data.frame(x=x[-train_index],Y=Y[-train_index])
+
+trained_errors <- c()
+test_errors <- c()
+
+for(i in 1:f){
+  model_train <- lm(Y~poly(x,degree=i,raw=T),data=train_data)  
+  
+  # MSE train
+  y_hats_train <- predict(model_train)
+  MSE_trained <- mean((train_data$Y-y_hats_train)^2)
+  trained_errors[i] <- MSE_trained
+  
+  # MSE test
+  y_hat_test <- predict(model_train,newdata = test_data)
+  MSE_test <- mean((test_data$Y-y_hat_test)^2)
+  test_errors[i] <- MSE_test
+}
+
+
+plot_range <- range(trained_errors, test_errors)
+plot_range <- c(plot_range[1]-.05,plot_range[2]+.05)
+
+plot(x=c(1:f), y=trained_errors,type="o",col="blue", ylim=plot_range,xlim=c(.5,f+.5), main="MSE Test versus Train",xlab="Model Complexity",ylab="MSE")
+lines(x=c(1:f),y=test_errors,col="red")
+
+points(x=c(1:f),y=test_errors,col="red")
+legend("topleft",legend=c("Test Error","Train Error"),fill=c(2,4),cex=.75)
+```
+The findings are consistent with our own ideas of MSE for training and test sets. As we can see, as model complexity increases, the training error decreases. We are more flexible and closely follow the data. As a result our training error decreases, since we "hug" the training data. On the other hand, as the model flexibility and degree increases in our regression model, the test MSEs increase. We have overfit our model to the data (which is truly linear) and thus increased the prediction error. These finding would generally carry out on other simulated data sets as well.
+
+## Question 1.3.b
+```{r}
+f <- 7
+set.seed(2)
+trains <- matrix(, ncol = f)
+tests <- matrix(, ncol = f)
+
+for (i in -500:500){
+  n <- 100
+  x <- runif(n)
+  Y <- 2 - i*x + rnorm(n,sd=.5)
+  
+  train_index <- sample(1:n,floor(.8*n))
+  train_data <- data.frame(x=x[train_index],Y=Y[train_index])
+  test_data <- data.frame(x=x[-train_index],Y=Y[-train_index])
+  
+  trained_errors_i <- c()
+  test_errors_i <- c()
+  
+  for(i in 1:f){
+    model_train <- lm(Y~poly(x,degree=i,raw=T),data=train_data)  
+    
+    # MSE train
+    y_hats_train <- predict(model_train)
+    MSE_trained <- mean((train_data$Y-y_hats_train)^2)
+    trained_errors_i[i] <- MSE_trained
+    
+    
+    # MSE test
+    y_hat_test <- predict(model_train,newdata = test_data)
+    MSE_test <- mean((test_data$Y-y_hat_test)^2)
+    test_errors_i[i] <- MSE_test
+  }
+
+  trains <- rbind(trains, trained_errors_i)
+  tests <- rbind(tests, test_errors_i)
+  }
+
+  trains <- trains[-1, ]
+  tests <- tests[-1, ]
+  
+  train_averages <- c()
+  test_average <- c()
+  
+  for(i in 1:f){
+    train_averages[i] <- mean(trains[, i])
+    test_average[i] <- mean(tests[, i])
+  }
+  
+plot_range <- range(train_averages, test_average)
+plot_range <- c(plot_range[1]-.05,plot_range[2]+.05)
+
+plot(x=c(1:f), y=train_averages,type="o",col="blue", ylim=plot_range,xlim=c(.5,f+.5), main="MSE Test versus Train for 1000 trials",xlab="Model Complexity",ylab="MSE")
+lines(x=c(1:f),y=test_average,col="red")
+
+points(x=c(1:f),y=test_average,col="red")
+legend("topleft",legend=c("Test Error","Train Error"),fill=c(2,4),cex=.75)
+  
+  
+
+```
+I've extended our findings from the first part of the problem to include regressions with higher degrees. After 1000 iterations, our graphs are still consistent with our findings. As we can see the training error is decreasing as the degree number increases, we are more flexible and "hug" the data set tighter with each more complex model. Again, just like in our earlier conclusions, the test error increases as the model is made more flexible. We've overfit the data, and are too reliant on the training data to make logical conclusions for testing.
